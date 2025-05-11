@@ -25,3 +25,17 @@ title('Frequency Spectrum');
 figure;
 spectrogram(ecg_clean, 256, 200, 512, Fs, 'yaxis');
 title('ECG Spectrogram');
+% Simulate Noises
+t = time;
+powerline = 0.2 * sin(2*pi*50*t);         % 50 Hz
+baseline = 0.4 * sin(2*pi*0.5*t);         % 0.5 Hz
+emg = 0.1 * randn(size(ecg_clean));       % High-freq noise
+
+% Combine with ECG
+noisy_ecg = ecg_clean + powerline + baseline + emg;
+
+% Plot
+figure;
+plot(t, noisy_ecg);
+xlabel('Time (s)'); ylabel('Amplitude');
+title('Noisy ECG Signal');
