@@ -126,37 +126,85 @@ title('Noisy Spectrogram - V1');
 % Using the designs from your original code (assumed from FDA Tool)
 fprintf('=== 2. Designing and Applying Static Filters ===\n');
 
+
 % Notch Filter for Powerline
-wo_notch = powerline_freq / (Fs/2); % Normalize frequency
-bw_notch = wo_notch / 35;      % Bandwidth (Q factor = 35)
-[bn, an] = iirnotch(wo_notch, bw_notch);
-fprintf('Notch Filter (IIR) Coefficients (Order %d):\n', max(length(an), length(bn))-1);
+
+%wo_notch = powerline_freq / (Fs/2); % Normalize frequency
+
+%bw_notch = wo_notch / 35; % Bandwidth (Q factor = 35)
+
+%[bn, an] = iirnotch(wo_notch, bw_notch);
+
+%fprintf('Notch Filter (IIR) Coefficients (Order %d):\n', max(length(an), length(bn))-1);
+
 % disp(' b_notch:'); disp(bn); disp(' a_notch:'); disp(an);
 
 % High-pass Filter for Baseline Wander
-fc_hp = 0.7; % Cut-off frequency in Hz (adjust as needed)
-order_hp = 4;
-[bh, ah] = butter(order_hp, fc_hp / (Fs/2), 'high');
-fprintf('High-pass Filter (Butterworth Order %d, fc=%.1f Hz) Coefficients:\n', order_hp, fc_hp);
+
+%fc_hp = 0.7; % Cut-off frequency in Hz (adjust as needed)
+
+%order_hp = 4;
+
+%[bh, ah] = butter(order_hp, fc_hp / (Fs/2), 'high');
+
+%fprintf('High-pass Filter (Butterworth Order %d, fc=%.1f Hz) Coefficients:\n', order_hp, fc_hp);
+
 % disp(' b_hp:'); disp(bh); disp(' a_hp:'); disp(ah);
 
 % Low-pass Filter for High-Frequency Noise
-fc_lp = 40; % Cut-off frequency in Hz (adjust as needed, e.g., 40-50 Hz)
-order_lp = 4;
-[bl, al] = butter(order_lp, fc_lp / (Fs/2), 'low');
-fprintf('Low-pass Filter (Butterworth Order %d, fc=%.1f Hz) Coefficients:\n', order_lp, fc_lp);
+
+%fc_lp = 40; % Cut-off frequency in Hz (adjust as needed, e.g., 40-50 Hz)
+
+%order_lp = 4;
+
+%[bl, al] = butter(order_lp, fc_lp / (Fs/2), 'low');
+
+%fprintf('Low-pass Filter (Butterworth Order %d, fc=%.1f Hz) Coefficients:\n', order_lp, fc_lp);
+
 % disp(' b_lp:'); disp(bl); disp(' a_lp:'); disp(al);
 
 % Apply filters sequentially
-fprintf('Applying static filters...\n');
-filt_MLII_static = filter(bn, an, noisy_MLII);      % Remove powerline
-filt_MLII_static = filter(bh, ah, filt_MLII_static); % Remove baseline wander
-filt_MLII_static = filter(bl, al, filt_MLII_static); % Remove high-freq noise
 
+%fprintf('Applying static filters...\n');
+
+%filt_MLII_static = filter(bn, an, noisy_MLII); % Remove powerline
+
+%filt_MLII_static = filter(bh, ah, filt_MLII_static); % Remove baseline wander
+
+%filt_MLII_static = filter(bl, al, filt_MLII_static); % Remove high-freq noise
+
+%filt_V1_static = filter(bn, an, noisy_V1); % Remove powerline
+
+%filt_V1_static = filter(bh, ah, filt_V1_static); % Remove baseline wander
+
+%filt_V1_static = filter(bl, al, filt_V1_static); % Remove high-freq noise
+
+%fprintf('Static filtering complete.\n');
+% Let's say you have the following variables:
+%
+% bn, an:  Coefficients for the Notch filter (powerline removal)
+% bh, ah:  Coefficients for the High-pass filter (baseline wander removal)
+% bl, al:  Coefficients for the Low-pass filter (high-frequency noise removal)
+%
+% If your variables have different names, just replace them accordingly
+% in the code below.
+
+% Apply filters sequentially
+fprintf('Applying filters from FDAtool...\n');
+
+% Apply Notch, High-pass, and Low-pass filters to MLII signal
+filt_MLII_static = filter(bbnn, aann, noisy_MLII);      % Remove powerline
+filt_MLII_static = filter(bbhh, aahh, filt_MLII_static); % Remove baseline wander
+filt_MLII_static = filter(bbll, aall, filt_MLII_static); % Remove high-freq noise
+
+% Apply Notch, High-pass, and Low-pass filters to V1 signal
 filt_V1_static = filter(bn, an, noisy_V1);          % Remove powerline
 filt_V1_static = filter(bh, ah, filt_V1_static);     % Remove baseline wander
 filt_V1_static = filter(bl, al, filt_V1_static);     % Remove high-freq noise
-fprintf('Static filtering complete.\n');
+
+fprintf('Filtering complete.\n');
+
+% Now, filt_MLII_static and filt_V1_static contain the filtered signals.
 
 %% === 3. Adaptive Filtering (LMS for Powerline Noise Cancellation) ===
 fprintf('=== 3. Applying Adaptive Filter (LMS) ===\n');
