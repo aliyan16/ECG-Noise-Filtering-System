@@ -1,14 +1,14 @@
 % Load ECG Data
-data = readtable('C:\AllData\Semester6\DSP\labs\dspProject\archive\100.csv'); % Make sure this path is correct
+data = readtable('C:\AllData\Semester6\DSP\labs\dspProject\archive\100.csv');
 time = data.time_ms;
 Sectime = time / 1000;
-ecg_MLII = data.MLII;      % Lead MLII - Keep as original clean signal
-ecg_V1   = data{:,4};        % Lead V1 - Keep as original clean signal
-Fs = 360;                   % Sampling Frequency for MIT-BIH
+ecg_MLII = data.MLII;      % Lead MLII
+ecg_V1   = data{:,4};        % Lead V1
+Fs = 360;          
 L = length(ecg_MLII);       % Signal Length
-t = Sectime;                % Time vector
+t = Sectime;   
 
-% Select shorter segment for plotting and some analysis if needed
+
 SamplesToPlot = 10 * Fs; % Plot 10 seconds
 PlotEndSample = min(SamplesToPlot, L); % Ensure we don't exceed signal length
 
@@ -30,9 +30,12 @@ grid on;
 
 % FREQUENCY SPECTRA
 f = Fs * (0:(L/2)) / L;
-Y1 = fft(ecg_MLII);  Y2 = fft(ecg_V1);
-P1 = abs(Y1 / L);    P2 = abs(Y2 / L);
-P1_clean = P1(1:L/2+1);    P2_clean = P2(1:L/2+1);
+Y1 = fft(ecg_MLII); 
+Y2 = fft(ecg_V1);
+P1 = abs(Y1 / L);    
+P2 = abs(Y2 / L);
+P1_clean = P1(1:L/2+1);   
+P2_clean = P2(1:L/2+1);
 P1_clean(2:end-1) = 2*P1_clean(2:end-1);
 P2_clean(2:end-1) = 2*P2_clean(2:end-1);
 
@@ -74,30 +77,39 @@ figure('Name', 'Noisy Signal Analysis');
 subplot(2,2,1);
 plot(t(1:PlotEndSample), noisy_MLII(1:PlotEndSample), 'r');
 title('Noisy ECG - MLII (Time Domain)');
-xlabel('Time (s)'); ylabel('Amplitude');
+xlabel('Time (s)'); 
+ylabel('Amplitude');
 grid on;
 
 subplot(2,2,2);
 plot(t(1:PlotEndSample), noisy_V1(1:PlotEndSample), 'r');
 title('Noisy ECG - V1 (Time Domain)');
-xlabel('Time (s)'); ylabel('Amplitude');
+xlabel('Time (s)'); 
+ylabel('Amplitude');
 grid on;
 
 % Analyze Noisy Signals (Frequency Domain)
-Yn1 = fft(noisy_MLII);  Yn2 = fft(noisy_V1);
-Pn1 = abs(Yn1 / L);    Pn2 = abs(Yn2 / L);
-Pn1_noisy = Pn1(1:L/2+1);    Pn2_noisy = Pn2(1:L/2+1);
+Yn1 = fft(noisy_MLII); 
+Yn2 = fft(noisy_V1);
+Pn1 = abs(Yn1 / L);    
+Pn2 = abs(Yn2 / L);
+Pn1_noisy = Pn1(1:L/2+1);    
+Pn2_noisy = Pn2(1:L/2+1);
 Pn1_noisy(2:end-1) = 2*Pn1_noisy(2:end-1);
 Pn2_noisy(2:end-1) = 2*Pn2_noisy(2:end-1);
 
 subplot(2,2,3);
-plot(f, Pn1_noisy, 'r'); title('Noisy Frequency Spectrum - MLII');
-xlabel('Frequency (Hz)'); ylabel('Magnitude');
+plot(f, Pn1_noisy, 'r'); 
+title('Noisy Frequency Spectrum - MLII');
+xlabel('Frequency (Hz)'); 
+ylabel('Magnitude');
 xlim([0 Fs/2]); grid on;
 
 subplot(2,2,4);
-plot(f, Pn2_noisy, 'r'); title('Noisy Frequency Spectrum - V1');
-xlabel('Frequency (Hz)'); ylabel('Magnitude');
+plot(f, Pn2_noisy, 'r'); 
+title('Noisy Frequency Spectrum - V1');
+xlabel('Frequency (Hz)'); 
+ylabel('Magnitude');
 xlim([0 Fs/2]); grid on;
 
 % Spectrograms of Noisy Signals
