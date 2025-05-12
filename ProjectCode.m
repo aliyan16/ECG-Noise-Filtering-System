@@ -1,93 +1,136 @@
 % Load ECG Data
 data = readtable('C:\AllData\Semester6\DSP\labs\dspProject\archive\100.csv');
-time = data.time_ms / 1000;
-ecg_clean = data.MLII;
-Fs = 360; % Sampling frequency
+time = data.time_ms;
+Sectime = time / 1000;
+ecg_MLII = data.MLII;      % Lead MLII
+ecg_V1   = data{:,4};        % Lead V1
+Fs = 360;
+SamplesToPlot = 10 * Fs;
 
-% Plot in Time Domain
+%% === TIME-DOMAIN PLOT ===
 figure;
-plot(time, ecg_clean);
+subplot(2,1,1);
+plot(Sectime(1:SamplesToPlot), ecg_MLII(1:SamplesToPlot), 'g');
 xlabel('Time (s)'); ylabel('Amplitude (mV)');
-title('Original ECG Signal - Time Domain');
+title('Original ECG - MLII (Time Domain)');
 
-% Frequency Spectrum
-L = length(ecg_clean);
-f = Fs * (0:(L/2))/L;
-Y = fft(ecg_clean);
-P = abs(Y/L);
-P1 = P(1:L/2+1);
+subplot(2,1,2);
+plot(Sectime(1:SamplesToPlot), ecg_V1(1:SamplesToPlot), 'm');
+xlabel('Time (s)'); ylabel('Amplitude (mV)');
+title('Original ECG - V1 (Time Domain)');
+
+%% === FREQUENCY SPECTRA ===
+L = length(ecg_MLII);
+f = Fs * (0:(L/2)) / L;
+
+Y1 = fft(ecg_MLII);  Y2 = fft(ecg_V1);
+P1 = abs(Y1 / L);    P2 = abs(Y2 / L);
+P1 = P1(1:L/2+1);    P2 = P2(1:L/2+1);
 P1(2:end-1) = 2*P1(2:end-1);
+P2(2:end-1) = 2*P2(2:end-1);
 
 figure;
-plot(f, P1);
+subplot(2,1,1);
+plot(f, P1, 'g'); title('Frequency Spectrum - MLII');
 xlabel('Frequency (Hz)'); ylabel('Magnitude');
-title('Frequency Spectrum');
 
-% Spectrogram
+subplot(2,1,2);
+plot(f, P2, 'm'); title('Frequency Spectrum - V1');
+xlabel('Frequency (Hz)'); ylabel('Magnitude');
+
+%% === SPECTROGRAMS ===
 figure;
-spectrogram(ecg_clean, 256, 200, 512, Fs, 'yaxis');
-title('ECG Spectrogram');
-% Simulate Noises
-t = time;
-powerline = 0.2 * sin(2*pi*50*t);         % 50 Hz
-baseline = 0.4 * sin(2*pi*0.5*t);         % 0.5 Hz
-emg = 0.1 * randn(size(ecg_clean));       % High-freq noise
+subplot(2,1,1);
+spectrogram(ecg_MLII, 256, 200, 512, Fs, 'yaxis');
+title('Spectrogram - MLII');
 
-% Combine with ECG
-noisy_ecg = ecg_clean + powerline + baseline + emg;
+subplot(2,1,2);
+spectrogram(ecg_V1, 256, 200, 512, Fs, 'yaxis');
+title('Spectrogram - V1');
 
-% Plot
+%% === SIMULATE NOISES FOR BOTH LEADS ===
+t = Sectime;
+powerline = 0.2 * sin(2*pi*50*t);       % 50 Hz
+baseline  = 0.4 * sin(2*pi*0.5*t);      % 0.5 Hz
+emg       = 0.1 * randn(size(ecg_MLII));% same size for both leads
+
+noisy_MLII = ecg_MLII + powerline + baseline + emg;
+noisy_V1   = ecg_V1   + powerline + baseline + emg;
+
+% Plot noisy signals
 figure;
-plot(t, noisy_ecg);
+subplot(2,1,1);
+plot(t(1:SamplesToPlot), noisy_MLII(1:SamplesToPlot), 'r');
+title('Noisy ECG - MLII');
 xlabel('Time (s)'); ylabel('Amplitude');
-title('Noisy ECG Signal');
 
-% 1. Notch Filter (50 Hz)
-wo = 50/(Fs/2);      % Normalized frequency
-bw = wo/35;          % Bandwidth (narrow notch)
+subplot(2,1,2);
+plot(t(1:SamplesToPlot), noisy_V1(1:SamplesToPlot), 'r');
+title('Noisy ECG - V1');
+xlabel('Time (s)'); ylabel('Amplitude');
+
+%% === DESIGN FILTERS ===
+wo = 50 / (Fs/2); bw = wo / 35;
 [bn, an] = iirnotch(wo, bw);
+fc_hp = 0.7 / (Fs/2); [bh, ah] = butter(4, fc_hp, 'high');
+fc_lp = 40 / (Fs/2); [bl, al] = butter(4, fc_lp, 'low');
 
-% 2. High-pass Filter (cutoff = 0.7 Hz)
-fc_hp = 0.7 / (Fs/2);    % Normalized cutoff
-[bh, ah] = butter(4, fc_hp, 'high');
+% Filter MLII
+filt_MLII = filter(bn, an, noisy_MLII);
+filt_MLII = filter(bh, ah, filt_MLII);
+filt_MLII = filter(bl, al, filt_MLII);
 
-% 3. Low-pass Filter (cutoff = 40 Hz)
-fc_lp = 40 / (Fs/2);     % Normalized cutoff
-[bl, al] = butter(4, fc_lp, 'low');
+% Filter V1
+filt_V1 = filter(bn, an, noisy_V1);
+filt_V1 = filter(bh, ah, filt_V1);
+filt_V1 = filter(bl, al, filt_V1);
 
-% Apply filters sequentially
-filtered_ecg = filter(bn, an, noisy_ecg);     % Notch filter
-filtered_ecg = filter(bh, ah, filtered_ecg);  % High-pass filter
-filtered_ecg = filter(bl, al, filtered_ecg);  % Low-pass filter
-
-% Time-domain Comparison
+%% === COMPARISON TIME DOMAIN ===
 figure;
-plot(t, ecg_clean, 'g'); hold on;
-plot(t, filtered_ecg, 'b');
-legend('Original Clean', 'Filtered ECG');
-title('Comparison: Clean vs Filtered');
-xlabel('Time (s)');
+subplot(2,1,1);
+plot(t, ecg_MLII, 'g'); hold on;
+plot(t, filt_MLII, 'b');
+legend('Clean', 'Filtered'); title('MLII: Clean vs Filtered');
 
-% FFT Comparison
-Yf = fft(filtered_ecg);
-Pf = abs(Yf/L); Pf1 = Pf(1:L/2+1); Pf1(2:end-1) = 2*Pf1(2:end-1);
+subplot(2,1,2);
+plot(t, ecg_V1, 'm'); hold on;
+plot(t, filt_V1, 'b');
+legend('Clean', 'Filtered'); title('V1: Clean vs Filtered');
+
+%% === FFT COMPARISON ===
+Yf1 = fft(filt_MLII); Yf2 = fft(filt_V1);
+Pf1 = abs(Yf1/L); Pf2 = abs(Yf2/L);
+Pf1 = Pf1(1:L/2+1); Pf2 = Pf2(1:L/2+1);
+Pf1(2:end-1) = 2*Pf1(2:end-1);
+Pf2(2:end-1) = 2*Pf2(2:end-1);
 
 figure;
+subplot(2,1,1);
 plot(f, P1, 'r--'); hold on;
 plot(f, Pf1, 'b');
-legend('Noisy ECG', 'Filtered ECG');
-title('Frequency Spectrum Comparison');
+legend('Noisy', 'Filtered'); title('FFT MLII');
 
-% Spectrogram of Filtered Signal
+subplot(2,1,2);
+plot(f, P2, 'r--'); hold on;
+plot(f, Pf2, 'b');
+legend('Noisy', 'Filtered'); title('FFT V1');
+
+%% === SPECTROGRAM OF FILTERED ===
 figure;
-spectrogram(filtered_ecg, 256, 200, 512, Fs, 'yaxis');
-title('Filtered ECG Spectrogram');
+subplot(2,1,1);
+spectrogram(filt_MLII, 256, 200, 512, Fs, 'yaxis');
+title('Filtered Spectrogram - MLII');
 
-% RMSE
-rmse = sqrt(mean((ecg_clean - filtered_ecg).^2));
+subplot(2,1,2);
+spectrogram(filt_V1, 256, 200, 512, Fs, 'yaxis');
+title('Filtered Spectrogram - V1');
 
-% SNR
-snr_val = snr(filtered_ecg, filtered_ecg - ecg_clean);
+%% === METRICS (RMSE & SNR) ===
+rmse_MLII = sqrt(mean((ecg_MLII - filt_MLII).^2));
+snr_MLII = snr(filt_MLII, filt_MLII - ecg_MLII);
 
-disp(['RMSE: ', num2str(rmse)]);
-disp(['SNR (dB): ', num2str(snr_val)]);
+rmse_V1 = sqrt(mean((ecg_V1 - filt_V1).^2));
+snr_V1 = snr(filt_V1, filt_V1 - ecg_V1);
+
+disp(['MLII RMSE: ', num2str(rmse_MLII), ', SNR (dB): ', num2str(snr_MLII)]);
+disp(['V1   RMSE: ', num2str(rmse_V1),   ', SNR (dB): ', num2str(snr_V1)]);
