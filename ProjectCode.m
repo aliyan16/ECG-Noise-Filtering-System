@@ -191,16 +191,19 @@ fprintf('=== 2. Designing and Applying Static Filters ===\n');
 
 % Apply filters sequentially
 fprintf('Applying filters from FDAtool...\n');
+[b, a] = sos2tf(bbnn, aann);
+[e, ee] = sos2tf(bbhh, aahh);
+[g, h] = sos2tf(bbll, aall);
 
 % Apply Notch, High-pass, and Low-pass filters to MLII signal
-filt_MLII_static = filter(bbnn, aann, noisy_MLII);      % Remove powerline
-filt_MLII_static = filter(bbhh, aahh, filt_MLII_static); % Remove baseline wander
-filt_MLII_static = filter(bbll, aall, filt_MLII_static); % Remove high-freq noise
+filt_MLII_static = filter(b, a, noisy_MLII);      % Remove powerline
+filt_MLII_static = filter(e,ee, filt_MLII_static); % Remove baseline wander
+filt_MLII_static = filter(g,h, filt_MLII_static); % Remove high-freq noise
 
 % Apply Notch, High-pass, and Low-pass filters to V1 signal
-filt_V1_static = filter(bn, an, noisy_V1);          % Remove powerline
-filt_V1_static = filter(bh, ah, filt_V1_static);     % Remove baseline wander
-filt_V1_static = filter(bl, al, filt_V1_static);     % Remove high-freq noise
+filt_V1_static = filter(b, a, noisy_V1);          % Remove powerline
+filt_V1_static = filter(e,ee, filt_V1_static);     % Remove baseline wander
+filt_V1_static = filter(g,h, filt_V1_static);     % Remove high-freq noise
 
 fprintf('Filtering complete.\n');
 
